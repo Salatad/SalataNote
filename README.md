@@ -1,7 +1,7 @@
 # SalataNote
 
-A private untraceable beta Cryptocurrency that's built on the CryptoNote Cryptocurrency and based on the CryptoNote protocol.
+A private untraceable alpha Cryptocurrency that's built on the CryptoNote Cryptocurrency codebase and implemented the CryptoNote protocol.
 
-The cryptocurrency software is in the testing phase right now. The updated open-source code will be pushed shortly.
+The Cryptocurrency software is in the testing phase. The updated open-source code will be pushed shortly. A development guide and documentation will also be provided.
 
 Follow Us.
