@@ -19,15 +19,20 @@ const command_line::arg_descriptor<std::string> arg_p2p_bind_ip        = {"p2p-b
 const command_line::arg_descriptor<uint16_t>    arg_p2p_bind_port      = {"p2p-bind-port", "Port for p2p network protocol", P2P_DEFAULT_PORT};
 const command_line::arg_descriptor<uint16_t>    arg_p2p_external_port = { "p2p-external-port", "External port for p2p network protocol (if port forwarding used with NAT)", 0 };
 const command_line::arg_descriptor<bool>        arg_p2p_allow_local_ip = {"allow-local-ip", "Allow local ip add to peer list, mostly in debug purposes"};
-const command_line::arg_descriptor<std::vector<std::string> > arg_p2p_add_peer   = {"add-peer", "Manually add peer to local peerlist"};
+const command_line::arg_descriptor<std::vector<std::string> > arg_p2p_add_peer   = {"add-peer", "Manually add peer to local peer list"};
+const command_line::arg_descriptor<std::vector<std::string> > arg_p2p_remove_peer   = {"remove-peer", "Manually remove a peer from the local peer list"};
 const command_line::arg_descriptor<std::vector<std::string> > arg_p2p_add_priority_node   = {"add-priority-node", "Specify list of peers to connect to and attempt to keep the connection open"};
 const command_line::arg_descriptor<std::vector<std::string> > arg_p2p_add_exclusive_node   = {"add-exclusive-node", "Specify list of peers to connect to only."
       " If this option is given the options add-priority-node and seed-node are ignored"};
 const command_line::arg_descriptor<std::vector<std::string> > arg_p2p_seed_node   = {"seed-node", "Connect to a node to retrieve peer addresses, and disconnect"};
-const command_line::arg_descriptor<bool> arg_p2p_hide_my_port   =    {"hide-my-port", "Do not announce yourself as peerlist candidate", false, true};
+const command_line::arg_descriptor<bool> arg_p2p_hide_my_port   =    {"hide-my-port", "Do not announce yourself as peer list candidate", false, true};
 
 bool parsePeerFromString(NetworkAddress& pe, const std::string& node_addr) {
   return Common::parseIpAddressAndPort(pe.ip, pe.port, node_addr);
+}
+
+bool comparePeersAddresses(NetworkAddress& peer1, NetworkAddress& peer2) {
+  return peer1.ip == peer2.ip && peer1.port == peer2.port;
 }
 
 bool parsePeersAndAddToContainer(const boost::program_options::variables_map& vm,
@@ -54,6 +59,7 @@ void NetNodeConfig::initOptions(boost::program_options::options_description& des
   command_line::add_arg(desc, arg_p2p_external_port);
   command_line::add_arg(desc, arg_p2p_allow_local_ip);
   command_line::add_arg(desc, arg_p2p_add_peer);
+  command_line::add_arg(desc, arg_p2p_remove_peer);
   command_line::add_arg(desc, arg_p2p_add_priority_node);
   command_line::add_arg(desc, arg_p2p_add_exclusive_node);
   command_line::add_arg(desc, arg_p2p_seed_node);
@@ -104,6 +110,26 @@ bool NetNodeConfig::init(const boost::program_options::variables_map& vm)
       }
 
       peers.push_back(pe);
+    }
+  }
+
+  if (command_line::has_arg(vm, arg_p2p_remove_peer)) {
+    std::vector<std::string> peersToRemoveArg = command_line::get_arg(vm, arg_p2p_remove_peer);
+    for(const std::string& pr_str: peersToRemoveArg) {
+      PeerlistEntry per = boost::value_initialized<PeerlistEntry>();
+      per.id = Crypto::rand<uint64_t>();
+      if (!parsePeerFromString(per.adr, pr_str)) {
+        return false;
+      }
+      peers.push_back(per);
+      for (auto it = peers.begin(); it != peers.end(); ++it) {
+        if (comparePeersAddresses(it->adr, per.adr)) {
+          std::cout << "Peer to remove: " << pr_str << std::endl;
+          // TODO: not removing (or it's removing but not saving)
+          peers.erase(it);
+          break;
+        }
+      }
     }
   }
 

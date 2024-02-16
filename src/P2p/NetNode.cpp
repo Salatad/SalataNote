@@ -91,6 +91,10 @@ bool parse_peer_from_string(NetworkAddress& pe, const std::string& node_addr) {
   return Common::parseIpAddressAndPort(pe.ip, pe.port, node_addr);
 }
 
+bool compare_peers_addresses(NetworkAddress& peer1, NetworkAddress& peer2) {
+  return peer1.ip == peer2.ip && peer1.port == peer2.port;
+}
+
 }
 
 
@@ -103,6 +107,7 @@ namespace CryptoNote
     const command_line::arg_descriptor<uint32_t>    arg_p2p_external_port  = {"p2p-external-port", "External port for p2p network protocol (if port forwarding used with NAT)", 0};
     const command_line::arg_descriptor<bool>        arg_p2p_allow_local_ip = {"allow-local-ip", "Allow local ip add to peer list, mostly in debug purposes"};
     const command_line::arg_descriptor<std::vector<std::string> > arg_p2p_add_peer   = {"add-peer", "Manually add peer to local peerlist"};
+    const command_line::arg_descriptor<std::vector<std::string> > arg_p2p_remove_peer   = {"remove-peer", "Manually remove peer from local peerlist"};
     const command_line::arg_descriptor<std::vector<std::string> > arg_p2p_add_priority_node   = {"add-priority-node", "Specify list of peers to connect to and attempt to keep the connection open"};
     const command_line::arg_descriptor<std::vector<std::string> > arg_p2p_add_exclusive_node   = {"add-exclusive-node", "Specify list of peers to connect to only."
                                                                                                   " If this option is given the options add-priority-node and seed-node are ignored"};
@@ -260,6 +265,7 @@ namespace CryptoNote
     command_line::add_arg(desc, arg_p2p_external_port);
     command_line::add_arg(desc, arg_p2p_allow_local_ip);
     command_line::add_arg(desc, arg_p2p_add_peer);
+    command_line::add_arg(desc, arg_p2p_remove_peer);
     command_line::add_arg(desc, arg_p2p_add_priority_node);
     command_line::add_arg(desc, arg_p2p_add_exclusive_node);
     command_line::add_arg(desc, arg_p2p_seed_node);    
@@ -347,6 +353,27 @@ namespace CryptoNote
         bool r = parse_peer_from_string(pe.adr, pr_str);
         if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to parse address from string: " << pr_str; return false; }
         m_command_line_peers.push_back(pe);
+      }
+    }
+
+    // TODO: not working
+    if (command_line::has_arg(vm, arg_p2p_remove_peer))
+    {       
+      std::vector<std::string> perrs = command_line::get_arg(vm, arg_p2p_remove_peer);
+      for(const std::string& pr_str: perrs)
+      {
+        PeerlistEntry pe = boost::value_initialized<PeerlistEntry>();
+        pe.id = Crypto::rand<uint64_t>();
+        bool r = parse_peer_from_string(pe.adr, pr_str);
+        if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to parse address from string: " << pr_str; return false; }
+        m_command_line_peers.push_back(pe);
+        for (auto it = m_command_line_peers.begin(); it != m_command_line_peers.end(); ++it) {
+          if (compare_peers_addresses(it->adr, pe.adr)) {
+            logger(INFO, BRIGHT_CYAN) << "Peer will be removed: " << pr_str;
+            m_command_line_peers.erase(it);
+            break;
+          }
+        }
       }
     }
 
