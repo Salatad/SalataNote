@@ -40,8 +40,8 @@ if(MATCHED_LINE)
     # Write the updated version.h.in file
     file(WRITE "${VERSION_H_IN_FILE}" "${NEW_VERSION_H_CONTENTS}")
 
-    message(STATUS "Build number determined and increased: ${CURRENT_BUILD_NO}")
-    message(STATUS "Next Build number: ${NEXT_BUILD_NO}")
+    message(STATUS "Build number determined: ${CURRENT_BUILD_NO}")
+    message(STATUS "Next build number: ${NEXT_BUILD_NO}")
 else()
     message(WARNING "Cannot determine the build number.")
 endif()
